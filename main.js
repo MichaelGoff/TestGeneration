@@ -39,6 +39,7 @@ function Constraint(properties)
 	this.expression = properties.expression;
 	this.operator = properties.operator;
 	this.value = properties.value;
+	this.altValue = properties.altValue
 	this.funcName = properties.funcName;
 	// Supported kinds: "fileWithContent","fileExists"
 	// integer, string, phoneNumber
@@ -87,6 +88,16 @@ function generateTestCases()
 			params[paramName] = '\'\'';
 		}
 
+		var altparams = {};
+
+		// initialize params
+		for (var i =0; i < functionConstraints[funcName].params.length; i++ )
+		{
+			var paramName = functionConstraints[funcName].params[i];
+			//params[paramName] = '\'' + faker.phone.phoneNumber()+'\'';
+			altparams[paramName] = '\'\'';
+		}
+
 		//console.log( params );
 
 		// update parameter values based on known constraints.
@@ -102,11 +113,14 @@ function generateTestCases()
 			if( params.hasOwnProperty( constraint.ident ) )
 			{
 				params[constraint.ident] = constraint.value;
+				altparams[constraint.ident] = constraint.altValue;
 			}
 		}
 
 		// Prepare function arguments.
 		var args = Object.keys(params).map( function(k) {return params[k]; }).join(",");
+		var altargs = Object.keys(params).map( function(k) {return altparams[k]; }).join(",");
+
 		if( pathExists || fileWithContent )
 		{
 			content += generateMockFsTestCases(pathExists,fileWithContent,funcName, args);
@@ -119,6 +133,7 @@ function generateTestCases()
 		{
 			// Emit simple test case.
 			content += "subject.{0}({1});\n".format(funcName, args );
+			content += "subject.{0}({1});\n".format(funcName, altargs );
 		}
 
 	}
@@ -185,6 +200,51 @@ function constraints(filePath)
 							{
 								ident: child.left.name,
 								value: rightHand,
+								altValue: parseInt(rightHand)- 1,
+								funcName: funcName,
+								kind: "integer",
+								operator : child.operator,
+								expression: expression
+							}));
+					}
+				}
+
+				if( child.type === 'BinaryExpression' && child.operator == "<")
+				{
+					if( child.left.type == 'Identifier' && params.indexOf( child.left.name ) > -1)
+					{
+						// get expression from original source code:
+						var expression = buf.substring(child.range[0], child.range[1]);
+						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
+
+						functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,
+								value: rightHand,
+								altValue: parseInt(rightHand) - 1,
+								funcName: funcName,
+								kind: "integer",
+								operator : child.operator,
+								expression: expression
+							}));
+					}
+				}
+
+				if( child.type === 'BinaryExpression' && child.operator == ">")
+				{
+					if( child.left.type == 'Identifier' && params.indexOf( child.left.name ) > -1)
+					{
+						// get expression from original source code:
+						var expression = buf.substring(child.range[0], child.range[1]);
+						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
+
+						functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,
+								value: rightHand,
+								altValue: parseInt(rightHand) + 1,
 								funcName: funcName,
 								kind: "integer",
 								operator : child.operator,
