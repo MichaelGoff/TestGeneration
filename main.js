@@ -70,6 +70,13 @@ var mockFileLibrary =
   			file1: 'text content',
 		}
 	},
+	emptyfile:
+	{
+		pathContent:
+		{
+			file1: '',
+		}
+	},
 	emptyDir:
 	{
 		path:
@@ -134,16 +141,15 @@ function generateTestCases()
 
 		if( pathExists || fileWithContent )
 		{
-			content += generateMockFsTestCases(pathExists,fileWithContent,true,funcName, args);
-			// Bonus...generate constraint variations test cases....
-			content += generateMockFsTestCases(!pathExists,fileWithContent,true,funcName, args);
-			content += generateMockFsTestCases(pathExists,!fileWithContent,true,funcName, args);
-			content += generateMockFsTestCases(!pathExists,!fileWithContent,true,funcName, args);
-			content += generateMockFsTestCases(pathExists,fileWithContent,false,funcName, args);
-			// Bonus...generate constraint variations test cases....
-			content += generateMockFsTestCases(!pathExists,fileWithContent,false,funcName, args);
-			content += generateMockFsTestCases(pathExists,!fileWithContent,false,funcName, args);
-			content += generateMockFsTestCases(!pathExists,!fileWithContent,false,funcName, args);
+			for(var emptyDir = 0; emptyDir < 2; emptyDir++) {
+				for(var emptyFile = 0; emptyFile < 2; emptyFile++) {
+					content += generateMockFsTestCases(pathExists,fileWithContent,emptyDir==0,emptyFile==0,funcName, args);
+					// Bonus...generate constraint variations test cases....
+					content += generateMockFsTestCases(!pathExists,fileWithContent,emptyDir==0,emptyFile==0,funcName, args);
+					content += generateMockFsTestCases(pathExists,!fileWithContent,emptyDir==0,emptyFile==0,funcName, args);
+					content += generateMockFsTestCases(!pathExists,!fileWithContent,emptyDir==0,emptyFile==0,funcName, args);
+				}
+			}
 		}
 		else
 		{
@@ -184,7 +190,7 @@ function generateTestCases()
 
 }
 
-function generateMockFsTestCases (pathExists,fileWithContent,emptyDir,funcName,args) 
+function generateMockFsTestCases (pathExists,fileWithContent,emptyDir,emptyFile,funcName,args) 
 {
 	var testCase = "";
 	// Build mock file system based on constraints.
@@ -195,9 +201,11 @@ function generateMockFsTestCases (pathExists,fileWithContent,emptyDir,funcName,a
 	} else if(pathExists && !emptyDir) {
 		for (var attrname in mockFileLibrary.emptyDir) { mergedFS[attrname] = mockFileLibrary.emptyDir[attrname]; }
 	}
-	if( fileWithContent )
+	if( fileWithContent  && !emptyFile)
 	{
 		for (var attrname in mockFileLibrary.fileWithContent) { mergedFS[attrname] = mockFileLibrary.fileWithContent[attrname]; }
+	} else if(fileWithContent && emptyFile) {
+		for (var attrname in mockFileLibrary.emptyfile) { mergedFS[attrname] = mockFileLibrary.emptyfile[attrname]; }
 	}
 
 	testCase += 
