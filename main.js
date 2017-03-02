@@ -131,9 +131,45 @@ function generateTestCases()
 		}
 		else
 		{
+			// for(var argsCount = 0; argsCount < args.length; argsCount++) {
+			// 	var newargs = [];
+			// 	newargs.push(...args.slice(0, argsCount));
+			// 	newargs.push(...altargs.slice(argsCount, args.length))
+
+			// 	content += "subject.{0}({1});\n".format(funcName, newargs );
+			// }
+
+			var holdingArr = [];
+			var twoOptions = [1, 2];
+			var recursivePermutation = function(singleSolution) {
+				if(singleSolution.length > functionConstraints[funcName].params.length - 1) {
+					holdingArr.push(singleSolution);
+					return;
+				} else {
+					for(var option = 0; option < twoOptions.length; option++) {
+						recursivePermutation(singleSolution.concat([twoOptions[option]]));
+					}
+				}
+			};
+			recursivePermutation([]);
+			
+			holdingArr.forEach(function(array){
+				var tempArgs = {};
+				for(var index = 0; index < functionConstraints[funcName].params.length; index++) {
+					var paramName = functionConstraints[funcName].params[index];
+					if(array[index] == 1) {
+						tempArgs[paramName] = params[paramName];
+					} else {
+						tempArgs[paramName] = altparams[paramName];
+					}
+				}
+				var stringArgs = Object.keys(tempArgs).map( function(k) {return tempArgs[k]; }).join(",");
+				content += "subject.{0}({1});\n".format(funcName, stringArgs );
+			});
+
 			// Emit simple test case.
-			content += "subject.{0}({1});\n".format(funcName, args );
-			content += "subject.{0}({1});\n".format(funcName, altargs );
+			//content += "subject.{0}({1});\n".format(funcName, args );
+			//content += "subject.{0}({1});\n".format(funcName, altargs );
 		}
 
 	}
@@ -195,17 +231,44 @@ function constraints(filePath)
 						var expression = buf.substring(child.range[0], child.range[1]);
 						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
 
-						functionConstraints[funcName].constraints.push( 
+						if(rightHand == "undefined") {
+							functionConstraints[funcName].constraints.push( 
 							new Constraint(
 							{
 								ident: child.left.name,
 								value: rightHand,
-								altValue: parseInt(rightHand)- 1,
+								altValue: 1,
 								funcName: funcName,
-								kind: "integer",
+								kind: "string",
 								operator : child.operator,
 								expression: expression
 							}));
+						}
+						else if(isNaN(rightHand)) {
+							functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,
+								value: rightHand,
+								altValue: rightHand.slice(0, 1) + "alt" + rightHand.slice(1),
+								funcName: funcName,
+								kind: "string",
+								operator : child.operator,
+								expression: expression
+							}));
+						} else {
+							functionConstraints[funcName].constraints.push( 
+								new Constraint(
+								{
+									ident: child.left.name,
+									value: rightHand,
+									altValue: parseInt(rightHand)- 1,
+									funcName: funcName,
+									kind: "integer",
+									operator : child.operator,
+									expression: expression
+								}));
+						}
 					}
 				}
 
