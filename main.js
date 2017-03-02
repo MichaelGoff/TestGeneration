@@ -69,6 +69,17 @@ var mockFileLibrary =
 		{	
   			file1: 'text content',
 		}
+	},
+	emptyDir:
+	{
+		path:
+		{
+			fileExists:
+			{
+				file1: 'content',
+				file2: ''
+			}
+		}
 	}
 };
 
@@ -123,22 +134,20 @@ function generateTestCases()
 
 		if( pathExists || fileWithContent )
 		{
-			content += generateMockFsTestCases(pathExists,fileWithContent,funcName, args);
+			content += generateMockFsTestCases(pathExists,fileWithContent,true,funcName, args);
 			// Bonus...generate constraint variations test cases....
-			content += generateMockFsTestCases(!pathExists,fileWithContent,funcName, args);
-			content += generateMockFsTestCases(pathExists,!fileWithContent,funcName, args);
-			content += generateMockFsTestCases(!pathExists,!fileWithContent,funcName, args);
+			content += generateMockFsTestCases(!pathExists,fileWithContent,true,funcName, args);
+			content += generateMockFsTestCases(pathExists,!fileWithContent,true,funcName, args);
+			content += generateMockFsTestCases(!pathExists,!fileWithContent,true,funcName, args);
+			content += generateMockFsTestCases(pathExists,fileWithContent,false,funcName, args);
+			// Bonus...generate constraint variations test cases....
+			content += generateMockFsTestCases(!pathExists,fileWithContent,false,funcName, args);
+			content += generateMockFsTestCases(pathExists,!fileWithContent,false,funcName, args);
+			content += generateMockFsTestCases(!pathExists,!fileWithContent,false,funcName, args);
 		}
 		else
 		{
-			// for(var argsCount = 0; argsCount < args.length; argsCount++) {
-			// 	var newargs = [];
-			// 	newargs.push(...args.slice(0, argsCount));
-			// 	newargs.push(...altargs.slice(argsCount, args.length))
-
-			// 	content += "subject.{0}({1});\n".format(funcName, newargs );
-			// }
-
+			//build permutations of all args and alt args to test. 
 			var holdingArr = [];
 			var twoOptions = [1, 2];
 			var recursivePermutation = function(singleSolution) {
@@ -166,10 +175,6 @@ function generateTestCases()
 				var stringArgs = Object.keys(tempArgs).map( function(k) {return tempArgs[k]; }).join(",");
 				content += "subject.{0}({1});\n".format(funcName, stringArgs );
 			});
-
-			// Emit simple test case.
-			//content += "subject.{0}({1});\n".format(funcName, args );
-			//content += "subject.{0}({1});\n".format(funcName, altargs );
 		}
 
 	}
@@ -179,14 +184,16 @@ function generateTestCases()
 
 }
 
-function generateMockFsTestCases (pathExists,fileWithContent,funcName,args) 
+function generateMockFsTestCases (pathExists,fileWithContent,emptyDir,funcName,args) 
 {
 	var testCase = "";
 	// Build mock file system based on constraints.
 	var mergedFS = {};
-	if( pathExists )
+	if( pathExists && emptyDir)
 	{
 		for (var attrname in mockFileLibrary.pathExists) { mergedFS[attrname] = mockFileLibrary.pathExists[attrname]; }
+	} else if(pathExists && !emptyDir) {
+		for (var attrname in mockFileLibrary.emptyDir) { mergedFS[attrname] = mockFileLibrary.emptyDir[attrname]; }
 	}
 	if( fileWithContent )
 	{
